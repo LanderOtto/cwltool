@@ -34,6 +34,7 @@ from .utils import (
     get_listing,
     normalizeFilesDirs,
     visit_class,
+    is_shallow_listing,
 )
 
 if TYPE_CHECKING:
@@ -565,12 +566,20 @@ class Builder(HasReqsHints):
             if schema["type"] == "org.w3id.cwl.cwl.Directory":
                 datum = cast(CWLObjectType, datum)
                 ll = schema.get("loadListing") or self.loadListing
-                if ll and ll != "no_listing":
-                    get_listing(
-                        self.fs_access,
-                        datum,
-                        (ll == "deep_listing"),
-                    )
+
+                if ll == "no_listing":
+                    datum.pop("listing", None)
+                elif ll == "shallow_listing":
+                    if "listing" not in datum:
+                        get_listing(self.fs_access, datum, recursive=False)
+                    else:
+                        for item in cast(list[CWLObjectType], datum.get("listing", [])):
+                            item.pop("listing", None)
+                elif ll == "deep_listing":
+                    if "listing" in datum and is_shallow_listing(datum):
+                        del datum["listing"]
+                    if "listing" not in datum:
+                        get_listing(self.fs_access, datum, recursive=True)
                 self.files.append(datum)
 
             if schema["type"] == "Any":

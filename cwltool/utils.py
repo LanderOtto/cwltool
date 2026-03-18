@@ -276,6 +276,15 @@ def dedup(listing: list[CWLObjectType]) -> list[CWLObjectType]:
     return dd
 
 
+def is_shallow_listing(rec: CWLObjectType) -> bool:
+    if rec is None or "listing" not in rec:
+        return False
+    for item in cast(list[CWLObjectType], rec.get("listing", [])):
+        if item.get("class") == "Directory" and "listing" in item:
+            return False
+    return True
+
+
 def get_listing(fs_access: "StdFsAccess", rec: CWLObjectType, recursive: bool = True) -> None:
     """Expand, recursively, any 'listing' fields in a Directory."""
     if rec.get("class") != "Directory":

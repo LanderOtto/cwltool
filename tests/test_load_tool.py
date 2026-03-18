@@ -1,6 +1,8 @@
 """Tests for cwltool.load_tool."""
 
+import json
 import logging
+import os
 import urllib.parse
 from pathlib import Path
 
@@ -15,7 +17,7 @@ from cwltool.process import use_custom_schema, use_standard_schema
 from cwltool.update import INTERNAL_VERSION
 from cwltool.utils import CWLObjectType
 
-from .util import get_data
+from .util import get_data, get_main_output
 
 configure_logging(_logger.handlers[-1], False, False, True, True, True)
 _logger.setLevel(logging.DEBUG)
@@ -168,3 +170,15 @@ def test_load_badhints_nodict() -> None:
         match=r".*tests\/wf\/hello-workflow-badhints2\.cwl:41:5:\s*'hints'\s*entries\s*must\s*be\s*dictionaries:\s*<class\s*'int'>\s*42\.",
     ):
         load_tool(uri, loadingContext)
+
+
+def test_listing_all() -> None:
+    """Test loadListing on an individual parameter"""
+    exit_code, stdout, stderr = get_main_output(
+        [
+            get_data("tests/listing_all.cwl"),
+            get_data("tests/listing-job3.yml"),
+        ]
+    )
+    assert exit_code == 0
+    assert json.loads(stdout)["out"] == [1]
